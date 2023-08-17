@@ -295,3 +295,45 @@ Dotplpot_data_RNA <- Dotplpot_data_RNA[,-1] %>% as.matrix()
 
 heatmap_RNA<-Heatmap(Dotplpot_data_RNA,cluster_columns =F)
 heatmap_RNA
+
+######check cell proportions
+pt_orig <- table(fibro_only$Hk2_Glspos_renamed, fibro_only$orig.ident)
+pt_orig <- as.data.frame(pt_orig)
+pt_orig$Var1 <- as.character(pt_orig$Var1)
+
+library(tidyverse)
+pt_double_pos = subset(pt_orig, Var1 == "double_pos")
+pt_double_neg = subset(pt_orig, Var1== "double_neg")
+pt_Gls = subset(pt_orig, Var1 == "Gls_pos")
+pt_Hk2_pos = subset(pt_orig, Var1 == "Hk2_pos")
+
+
+pt_double_pos <- pt_double_pos %>% select(-one_of('Var1'))
+pt_double_pos <- pt_double_pos %>% remove_rownames %>% column_to_rownames(var="Var2")
+pt_master = pt_double_pos
+colnames(pt_master) <- "double_pos"
+#split up for each cluster
+pt_master$pt_double_neg <- pt_double_neg$Freq
+pt_master$pt_Gls <- pt_Gls$Freq
+pt_master$pt_Hk2_pos <- pt_Hk2_pos$Freq
+pt_master <- pt_master/rowSums(pt_master)
+
+pt_master <- as.data.frame(pt_master)
+pt_master$condition<-c("rest", "rest", "rest", "peak", "peak", "peak", "resolved", "resolved", "resolved", "resolving", "resolving", "resolving")
+
+ggplot(pt_master, aes(x=factor(condition, level=c('rest', 'peak', 'resolving', 'resolved')), y=double_pos)) + 
+  geom_violin() + geom_dotplot(binaxis='y', stackdir='center', dotsize=1)+ggtitle("double_pos")
+
+res.aov_double_pos <- aov(double_pos ~ condition, data = pt_master)
+summary(res.aov_double_pos)
+stats_res.aov_double_pos <- TukeyHSD(res.aov_double_pos)
+stats_res.aov_double_pos
+
+
+ggplot(pt_master, aes(x=factor(condition, level=c('rest', 'peak', 'resolving', 'resolved')), y=pt_double_neg)) + 
+  geom_violin() + geom_dotplot(binaxis='y', stackdir='center', dotsize=1)+ggtitle("double_neg")
+
+res.aov_pt_double_neg <- aov(pt_double_neg ~ condition, data = pt_master)
+summary(res.aov_pt_double_neg)
+stats_res.aov_pt_double_neg <- TukeyHSD(res.aov_pt_double_neg)
+stats_res.aov_pt_double_neg
